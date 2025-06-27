@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: rgb(61, 62, 63);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            background-color: rgba(128, 125, 125, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h2 {
+            text-align: center;
+            color: white;
+        }
+
+        #chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            max-height: 300px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 5px;
+        }
+
+        .user-message {
+            text-align: left;
+            color: white;
+            font-weight: bold;
+        }
+
+        .bot-message {
+            text-align: right;
+            color: white;
+            font-style: italic;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            width: 85%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: rgb(61, 62, 63);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: gray;
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: white;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Chat with our Bot</h2>
+        
+        <div id="chat-history">
+            {% for sender, message in chat_history %}
+                <div class="message">
+                    <p class="{{ 'user-message' if sender == 'You' else 'bot-message' }}">
+                        <strong>{{ sender }}:</strong> 
+                        <span>{{ message | safe }}</span>  <!-- Ensuring HTML content is rendered -->
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+        
+
+        <div class="input-container">
+            <form method="POST" action="{{ url_for('chatbot') }}" style="width: 100%;">
+                <input type="text" name="user_message" placeholder="Type your message..." required>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+        
+        <a href="{{ url_for('welcome') }}">Go Back to Welcome</a>
+    </div>
+
+    <script>
+        // Automatically scroll to the bottom of the chat history when a new message is added
+        window.onload = function() {
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        };
+    </script>
+</body>
+</html>

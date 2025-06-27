@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beck's Depression Inventory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Open+Sans&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Open Sans', sans-serif;
+            background: url("{{ url_for('static', filename='mental_health/Emp.png') }}") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .container {
+            background: rgba(136, 99, 74, 0.32);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: rgb(41, 36, 33);
+            margin-bottom: 20px;
+        }
+
+        .question {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .question label {
+            display: block;
+            margin: 10px 0;
+            text-align: left;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .question input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: rgba(116, 91, 74, 0.45);
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover:enabled {
+            background-color: rgba(110, 85, 67, 0.87);
+        }
+
+        .btn:disabled {
+            background-color: #dcdcdc;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f5f0eb;
+            border-left: 5px solid #8b5e3c;
+            border-radius: 8px;
+            color: #333;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .progress {
+            font-size: 14px;
+            color: rgba(66, 54, 48, 0.93);
+            margin-top: 10px;
+        }
+
+        #navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        #navigation button {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .back-link {
+            font-size: 18 px;
+            font-family: 'Times New Roman', Times, serif;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: block;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .back-container {
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="main-wrapper">
+        <div class="container" id="introContainer">
+            <h1>Beck's Depression Inventory</h1>
+            <p>This self-assessment questionnaire helps you evaluate the presence and severity of depressive symptoms. It contains 21 questions, each with four answer choices. Your responses are confidential and can help determine if you should seek professional support.</p>
+            <button class="btn" onclick="startTest()">Take the Test</button>
+        </div>
+        
+        <div class="container hidden" id="quizContainer">
+            <h1>Beck's Depression Inventory</h1>
+            <form id="depressionForm">
+                <div id="questionContainer"></div>
+                <div class="progress" id="progressText">1/21</div>
+                <div id="navigation">
+                    <button type="button" class="btn" id="prevBtn" onclick="prevQuestion()">Previous</button>
+                    <button type="button" class="btn" id="nextBtn" onclick="nextQuestion()" disabled>Next</button>
+                    <button type="button" class="btn hidden" id="submitBtn" onclick="calculateResults()">Submit</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="container hidden" id="resultContainer">
+            <h1>Test Result</h1>
+            <div id="result" class="result"></div>
+            <button class="btn" onclick="retakeTest()">Retake Test</button>
+        </div>
+
+        <div class="back-container">
+            <a href="{{ url_for('welcome') }}" class="back-link">Go Back to Welcome</a>
+        </div>
+    </main>
+
+    <script>
+        const categories = [
+            'Sadness', 'Pessimism', 'Past Failure', 'Loss of Pleasure', 'Guilty Feelings',
+            'Punishment Feelings', 'Self Dislike', 'Self Criticism', 'Suicidal Thoughts', 'Crying',
+            'Restlessness', 'Loss of Interest', 'Indecisiveness', 'Worthlessness', 'Loss of Energy',
+            'Change in Sleep Patterns', 'Irritability', 'Change in Appetite', 'Ability to Concentrate',
+            'Tiredness or Fatigue', 'Loss of Sexual Interest'
+        ];
+
+        const answers = [
+            ['I do not feel sad.', 'I feel sad much of the time.', 'I am sad all the time.', 'I am so sad or unhappy that I can’t stand it.'],
+            ['I am not discouraged about my future.', 'I feel more discouraged about my future than I used to be.', 'I do not expect things to work out for me.', 'I feel my future is hopeless and will only get worse.'],
+            ['I do not feel like a failure.', 'I have failed more than I should have.', 'As I look back, I see a lot of failures.', 'I feel I am a total failure as a person.'],
+            ['I get as much pleasure as ever from the things I enjoy.', 'I don’t enjoy things as much as I used to.', 'I get very little pleasure from the things I used to enjoy.', 'I can’t get any pleasure from the things I used to enjoy.'],
+            ['I don’t feel particularly guilty.', 'I feel guilty over many things I have done or should have done.', 'I feel quite guilty most of the time.', 'I feel guilty all the time.'],
+            ['I don’t feel I am being punished.', 'I feel I may be punished.', 'I expect to be punished.', 'I feel I am being punished.'],
+            ['I feel the same about myself as ever.', 'I have lost confidence in myself.', 'I am disappointed in myself.', 'I dislike myself.'],
+            ['I don’t criticize or blame myself more than usual.', 'I am more critical of myself than I used to be.', 'I criticize myself for all of my faults.', 'I blame myself for everything that happens.'],
+            ['I don’t have any thoughts of killing myself.', 'I have thoughts of killing myself, but I would not carry them out.', 'I would like to kill myself.', 'I would kill myself if I find the chance.'],
+            ['I don’t cry anymore than I used to.', 'I cry more than I used to.', 'I cry over every little thing.', 'I feel like crying, but I can’t.'],
+            ['I am no more restless or wound up than usual.', 'I feel more restless or wound up than usual.', 'I am so restless or agitated that it’s hard to stay still.', 'I am so restless or agitated that I have to keep moving or doing something.'],
+            ['I have not lost interest in other people or activities.', 'I am less interested in other people or things than before.', 'I have lost most of my interest in other people or things.', 'It’s hard to get interested in anything.'],
+            ['I make decisions about as well as ever.', 'I find it more difficult to make decisions than usual.', 'I have much greater difficulty in making decisions than I used to.', 'I have trouble making any decisions.'],
+            ['I do not feel I am worthless.', 'I don’t consider myself as worthwhile and useful as I used to.', 'I feel more worthless as compared to other people.', 'I feel utterly worthless.'],
+            ['I have as much energy as ever.', 'I have less energy than I used to have.', 'I don’t have enough energy to do very much.', 'I don’t have enough energy to do anything.'],
+            ['I have not experienced any change in my sleeping pattern.', 'I sleep somewhat more than usual or I sleep somewhat less than usual.', 'I sleep a lot more than usual or I sleep a lot less than usual.', 'I sleep most of the day or I wake up 1-2 hours early and can’t get back to sleep.'],
+            ['I am no more irritable than usual.', 'I am more irritable than usual.', 'I am much more irritable than usual.', 'I am irritable all the time.'],
+            ['I have not experienced any change in my appetite.', 'My appetite is somewhat less than usual or My appetite is somewhat greater than usual.', 'My appetite is much less than usual or My appetite is much greater than usual.', 'I have no appetite at all or I crave food all the time.'],
+            ['I can concentrate as well as ever.', 'I can’t concentrate as well as usual.', 'It’s hard to keep my mind on anything for very long.', 'I find I can’t concentrate on anything.'],
+            ['I am no more tired or fatigued than usual.', 'I get more tired or fatigued more easily than usual.', 'I am too tired or fatigued to do a lot of the things I used to do.', 'I am too tired or fatigued to do most of the things I used to do.'],
+            ['I have not noticed any recent change in my interest in sex.', 'I am less interested in sex than I used to be.', 'I am much less interested in sex now.', 'I have lost interest in sex completely.']
+        ];
+
+        let currentQuestion = 0;
+        let scores = new Array(categories.length).fill(null);
+
+        function startTest() {
+            document.getElementById('introContainer').classList.add('hidden');
+            document.getElementById('quizContainer').classList.remove('hidden');
+            loadQuestion(currentQuestion);
+        }
+
+        function loadQuestion(index) {
+            const container = document.getElementById('questionContainer');
+            container.innerHTML = '';
+            const question = categories[index];
+            const options = answers[index];
+
+            const questionElement = document.createElement('div');
+            questionElement.classList.add('question');
+            questionElement.innerHTML = `<p><strong>${index + 1}. ${question}</strong></p>`;
+
+            options.forEach((answer, i) => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="radio" name="q${index}" value="${i}" onclick="saveAnswer(${index}, ${i})">${answer}`;
+                questionElement.appendChild(label);
+            });
+
+            container.appendChild(questionElement);
+            document.getElementById('progressText').textContent = `${index + 1}/21`;
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').classList.toggle('hidden', index === categories.length - 1);
+            document.getElementById('submitBtn').classList.toggle('hidden', index !== categories.length - 1);
+            document.getElementById('nextBtn').disabled = !isAnswerSelected(index);
+        }
+
+        function isAnswerSelected(index) {
+            return scores[index] !== null;
+        }
+
+        function saveAnswer(questionIndex, answerIndex) {
+            scores[questionIndex] = answerIndex;
+            if (questionIndex === categories.length - 1) {
+                document.getElementById('submitBtn').disabled = false;
+            } else {
+                document.getElementById('nextBtn').disabled = false;
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < categories.length - 1) {
+                currentQuestion++;
+                loadQuestion(currentQuestion);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion(currentQuestion);
+            }
+        }
+
+        function calculateResults() {
+            const totalScore = scores.reduce((total, score) => total + (score !== null ? score : 0), 0);
+            let mood = "", appointmentLink = "";
+
+            if (totalScore <= 10) mood = "Normal ups and downs";
+            else if (totalScore <= 16) mood = "Mild mood disturbance";
+            else if (totalScore <= 20) mood = "Borderline Depression";
+            else if (totalScore <= 30) mood = "Moderate Depression";
+            else if (totalScore <= 40) {
+                mood = "Severe Depression";
+                appointmentLink = `<br><button class="btn" onclick="window.open('/appointment', '_blank')">Book Appointment</button>`;
+            } else {
+                mood = "Extreme Depression";
+                appointmentLink = `<br><button class="btn" onclick="window.open('/appointment', '_blank')">Book Appointment</button>`;
+            }
+
+            document.getElementById('quizContainer').classList.add('hidden');
+            document.getElementById('resultContainer').classList.remove('hidden');
+            document.getElementById('result').innerHTML = `<strong>Your Score: ${totalScore}</strong><br>${mood}${appointmentLink}`;
+        }
+
+        function retakeTest() {
+            currentQuestion = 0;
+            scores = new Array(categories.length).fill(null);
+            document.getElementById('resultContainer').classList.add('hidden');
+            document.getElementById('quizContainer').classList.remove('hidden');
+            loadQuestion(currentQuestion);
+        }
+
+        loadQuestion(currentQuestion);
+    </script>
+</body>
+</html>
